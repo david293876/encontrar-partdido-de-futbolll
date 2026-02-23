@@ -1,0 +1,1336 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0"/>
+<title>KickMatch ⚽ – Encuentra tu Rival</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════ RESET & ROOT ═══════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --g1:#0f7a3a;--g2:#18a855;--g3:#2ecc71;--g4:#54d98c;
+  --dark:#070f09;--surface:#0d1a10;--card:#121f15;--card2:#172a1b;
+  --white:#f2fdf4;--gray:#8aab90;--muted:#4a6b50;
+  --black:#050a06;--accent:#f7c948;--red:#e8433a;--blue:#3a9ee8;
+  --border:rgba(46,204,113,.18);--border2:rgba(46,204,113,.35);
+  --shadow:0 8px 32px rgba(0,0,0,.5);
+  --radius:18px;--radius-sm:10px;
+}
+html,body{height:100%;overflow:hidden;background:var(--dark);color:var(--white);font-family:'Plus Jakarta Sans',sans-serif}
+body{display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% -20%,rgba(15,122,58,.25) 0%,transparent 65%);
+  pointer-events:none;z-index:0;max-width:430px;margin:0 auto}
+
+/* ═══════════════════════════ SCROLLABLE MAIN ═══════════════════════════ */
+#app{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative;z-index:1}
+
+/* ═══════════════════════════ SCREENS ═══════════════════════════ */
+.screen{display:none;flex-direction:column;height:100%;overflow-y:auto;overflow-x:hidden}
+.screen.active{display:flex}
+
+/* ═══════════════════════════ TOP NAV BAR ═══════════════════════════ */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:16px 20px 12px;flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  background:rgba(7,15,9,.85);backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:100;
+}
+.topbar .logo{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;
+  background:linear-gradient(135deg,var(--g3),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:1px}
+.topbar .team-name{font-size:.8rem;color:var(--gray);font-weight:500}
+
+/* ═══════════════════════════ BOTTOM NAV ═══════════════════════════ */
+.bottomnav{
+  display:flex;align-items:center;justify-content:space-around;
+  padding:10px 0 max(10px,env(safe-area-inset-bottom));
+  background:rgba(7,15,9,.92);backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);flex-shrink:0;position:relative;z-index:100;
+}
+.nav-btn{display:flex;flex-direction:column;align-items:center;gap:3px;background:none;border:none;cursor:pointer;padding:6px 16px;border-radius:12px;transition:all .2s;color:var(--muted);font-family:'Plus Jakarta Sans',sans-serif}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.nav-btn span{font-size:.65rem;font-weight:600;letter-spacing:.5px;text-transform:uppercase}
+.nav-btn.active{color:var(--g3)}
+.nav-btn .badge{position:absolute;top:-2px;right:-4px;background:var(--red);color:#fff;border-radius:10px;font-size:.55rem;padding:1px 5px;font-weight:700;min-width:16px;text-align:center}
+.nav-icon-wrap{position:relative;display:inline-flex}
+
+/* ═══════════════════════════ BUTTONS ═══════════════════════════ */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;border-radius:12px;transition:all .2s;text-decoration:none;-webkit-user-select:none;user-select:none}
+.btn-primary{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;padding:14px 28px;font-size:1rem;box-shadow:0 4px 20px rgba(15,122,58,.4)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(15,122,58,.5)}
+.btn-primary:active{transform:scale(.97)}
+.btn-outline{background:transparent;border:1.5px solid var(--border2);color:var(--g3);padding:12px 24px;font-size:.9rem}
+.btn-outline:hover{background:rgba(46,204,113,.1)}
+.btn-accent{background:var(--accent);color:var(--black);padding:12px 24px;font-size:.9rem;font-weight:800}
+.btn-sm{padding:8px 16px;font-size:.8rem;border-radius:8px}
+.btn-full{width:100%}
+.btn-danger{background:rgba(232,67,58,.15);border:1.5px solid rgba(232,67,58,.3);color:var(--red);padding:12px 24px;font-size:.9rem}
+
+/* ═══════════════════════════ FORM ELEMENTS ═══════════════════════════ */
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+label{font-size:.8rem;font-weight:700;color:var(--gray);text-transform:uppercase;letter-spacing:.8px}
+.inp,.sel,.textarea{
+  background:rgba(255,255,255,.05);border:1.5px solid var(--border);
+  color:var(--white);padding:13px 16px;border-radius:12px;
+  font-size:.95rem;font-family:'Plus Jakarta Sans',sans-serif;
+  outline:none;transition:border-color .2s,background .2s;width:100%;
+}
+.inp:focus,.sel:focus,.textarea:focus{border-color:var(--g3);background:rgba(46,204,113,.06)}
+.inp::placeholder,.textarea::placeholder{color:var(--muted)}
+.sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238aab90' d='M6 8L1 3h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer}
+.sel option{background:#0d1a10;color:#f2fdf4}
+.textarea{resize:none;height:80px;line-height:1.5}
+.checkbox-group{display:flex;flex-wrap:wrap;gap:8px}
+.check-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.05);border:1.5px solid var(--border);border-radius:20px;padding:7px 14px;cursor:pointer;font-size:.82rem;font-weight:600;transition:all .2s;-webkit-user-select:none;user-select:none}
+.check-pill input{display:none}
+.check-pill.checked{border-color:var(--g3);background:rgba(46,204,113,.12);color:var(--g3)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.inp-error{border-color:var(--red)!important}
+.err-msg{color:var(--red);font-size:.75rem;margin-top:3px}
+
+/* ═══════════════════════════ SECTION HEADERS ═══════════════════════════ */
+.section-head{padding:20px 20px 8px;flex-shrink:0}
+.section-head h2{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:1px;color:var(--white)}
+.section-head p{color:var(--gray);font-size:.83rem;margin-top:2px}
+
+/* ═══════════════════════════ SPLASH SCREEN ═══════════════════════════ */
+#splash{background:var(--dark);align-items:center;justify-content:center;text-align:center;padding:40px 32px}
+.splash-logo{font-family:'Bebas Neue',sans-serif;font-size:4rem;letter-spacing:3px;
+  background:linear-gradient(135deg,var(--g3) 0%,var(--accent) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:splashIn .8s ease both}
+.splash-ball{font-size:4rem;margin-bottom:12px;animation:bounce 1.5s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+@keyframes splashIn{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
+.splash-tagline{font-size:1.05rem;color:var(--gray);margin:10px 0 32px;line-height:1.5}
+.splash-tagline strong{color:var(--g3)}
+
+/* ═══════════════════════════ REGISTER SCREEN ═══════════════════════════ */
+#register{padding:0 20px 20px}
+#register .scroll-body{padding:0 0 20px;flex:1}
+
+/* ═══════════════════════════ SWIPE SCREEN ═══════════════════════════ */
+#swipe{background:var(--dark)}
+.swipe-area{flex:1;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:12px 16px}
+.swipe-counter{text-align:center;font-size:.8rem;color:var(--muted);padding:6px;flex-shrink:0}
+
+/* ── TEAM CARD ── */
+.team-card{
+  position:absolute;width:calc(100% - 32px);max-width:360px;
+  background:linear-gradient(160deg,var(--card) 0%,var(--card2) 100%);
+  border:1.5px solid var(--border);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+  cursor:grab;-webkit-user-select:none;user-select:none;
+  transition:box-shadow .2s;
+}
+.team-card:active{cursor:grabbing}
+.team-card.is-swiping{transition:none}
+.card-header{padding:22px 22px 14px;position:relative;
+  background:linear-gradient(135deg,rgba(15,122,58,.3) 0%,transparent 60%)}
+.card-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:rgba(46,204,113,.15);border:1px solid var(--border2);
+  color:var(--g3);border-radius:20px;padding:4px 12px;
+  font-size:.72rem;font-weight:700;letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px
+}
+.card-team-name{font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:1px;line-height:1;margin-bottom:4px}
+.card-city{color:var(--gray);font-size:.85rem;display:flex;align-items:center;gap:5px}
+.card-body{padding:4px 22px 20px}
+.card-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.stat-box{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.stat-label{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.stat-value{font-size:.92rem;font-weight:700;color:var(--white)}
+.card-avail{margin-bottom:12px}
+.avail-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.avail-pills{display:flex;flex-wrap:wrap;gap:5px}
+.avail-pill{background:rgba(247,201,72,.1);border:1px solid rgba(247,201,72,.25);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:600}
+.card-field{display:flex;align-items:center;gap:6px;font-size:.82rem;color:var(--gray);padding:8px 0;border-top:1px solid var(--border)}
+.card-field svg{width:14px;height:14px;stroke:var(--g3);fill:none;flex-shrink:0}
+
+/* ── SWIPE LABELS ── */
+.swipe-label{
+  position:absolute;top:22px;padding:6px 16px;border-radius:8px;
+  font-family:'Bebas Neue',sans-serif;font-size:1.4rem;letter-spacing:2px;
+  border:3px solid;opacity:0;transform:rotate(-10deg);pointer-events:none;z-index:10;
+  transition:opacity .1s;
+}
+.swipe-label.yes{right:18px;color:#2ecc71;border-color:#2ecc71;transform:rotate(10deg)}
+.swipe-label.no{left:18px;color:#e8433a;border-color:#e8433a;transform:rotate(-10deg)}
+
+/* ── ACTION BUTTONS ── */
+.swipe-actions{display:flex;align-items:center;justify-content:center;gap:20px;padding:14px 20px 18px;flex-shrink:0}
+.action-btn{width:60px;height:60px;border-radius:50%;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:1.6rem;transition:all .2s;box-shadow:0 4px 16px rgba(0,0,0,.3)}
+.action-btn:active{transform:scale(.9)}
+.action-no{background:rgba(232,67,58,.15);border:2px solid rgba(232,67,58,.4)}
+.action-no:hover{background:rgba(232,67,58,.3)}
+.action-yes{background:rgba(46,204,113,.15);border:2px solid rgba(46,204,113,.4)}
+.action-yes:hover{background:rgba(46,204,113,.3)}
+.action-super{background:rgba(247,201,72,.15);border:2px solid rgba(247,201,72,.4);width:48px;height:48px;font-size:1.2rem}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 24px}
+.empty-state .empty-icon{font-size:3.5rem;margin-bottom:12px}
+.empty-state h3{font-family:'Bebas Neue',sans-serif;font-size:1.4rem;margin-bottom:6px;color:var(--white)}
+.empty-state p{color:var(--gray);font-size:.85rem;line-height:1.5}
+
+/* ═══════════════════════════ FILTERS ═══════════════════════════ */
+.filter-bar{padding:10px 16px;display:flex;gap:8px;overflow-x:auto;flex-shrink:0;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.filter-bar::-webkit-scrollbar{display:none}
+.filter-chip{display:flex;align-items:center;gap:5px;background:rgba(255,255,255,.05);
+  border:1.5px solid var(--border);border-radius:20px;padding:6px 14px;
+  font-size:.78rem;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .2s;
+  color:var(--gray);flex-shrink:0}
+.filter-chip.on{border-color:var(--g3);background:rgba(46,204,113,.12);color:var(--g3)}
+.filter-chip svg{width:12px;height:12px;stroke:currentColor;fill:none}
+
+/* Filter Panel */
+.filter-panel{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
+  width:100%;max-width:430px;background:var(--surface);
+  border-top:1.5px solid var(--border2);border-radius:24px 24px 0 0;
+  padding:20px 20px 32px;z-index:200;transition:transform .35s cubic-bezier(.25,.46,.45,.94);
+  box-shadow:0 -8px 40px rgba(0,0,0,.5);
+}
+.filter-panel.open{transform:translateX(-50%) translateY(0)}
+.filter-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:190;max-width:430px;left:50%;transform:translateX(-50%)}
+.filter-overlay.show{display:block}
+.panel-handle{width:36px;height:4px;background:var(--muted);border-radius:2px;margin:0 auto 18px}
+
+/* ═══════════════════════════ MATCHES SCREEN ═══════════════════════════ */
+#matches{padding:0}
+.match-list{padding:10px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.match-card{
+  background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 16px;display:flex;align-items:center;gap:14px;
+  animation:slideIn .3s ease both;
+}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px)}to{opacity:1;transform:translateX(0)}}
+.match-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g3));
+  display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;
+  border:2px solid var(--border2)}
+.match-info{flex:1;min-width:0}
+.match-name{font-weight:700;font-size:.95rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.match-meta{font-size:.75rem;color:var(--gray);margin-top:2px}
+.match-time{font-size:.7rem;color:var(--muted);flex-shrink:0}
+.contact-sheet{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
+  width:100%;max-width:430px;background:var(--surface);
+  border-top:1.5px solid var(--border2);border-radius:24px 24px 0 0;
+  padding:24px 24px 40px;z-index:300;transition:transform .35s cubic-bezier(.25,.46,.45,.94);
+  box-shadow:0 -8px 40px rgba(0,0,0,.6);
+}
+.contact-sheet.open{transform:translateX(-50%) translateY(0)}
+
+/* ═══════════════════════════ MATCH CELEBRATION ═══════════════════════════ */
+#match-modal{
+  position:fixed;inset:0;background:rgba(7,15,9,.95);
+  display:none;align-items:center;justify-content:center;
+  z-index:500;flex-direction:column;text-align:center;padding:32px;
+  max-width:430px;left:50%;transform:translateX(-50%);
+}
+#match-modal.show{display:flex}
+.match-confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.confetti-piece{position:absolute;width:8px;height:8px;border-radius:2px;animation:confettiFall linear infinite}
+@keyframes confettiFall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+.match-flame{font-size:5rem;animation:flamePulse .6s ease infinite alternate;margin-bottom:8px}
+@keyframes flamePulse{from{transform:scale(1)}to{transform:scale(1.15)}}
+.match-title{font-family:'Bebas Neue',sans-serif;font-size:3.2rem;letter-spacing:3px;
+  background:linear-gradient(135deg,var(--g3),var(--accent));
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  animation:matchPop .5s cubic-bezier(.175,.885,.32,1.275) both}
+@keyframes matchPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+.match-vs{display:flex;align-items:center;gap:12px;margin:20px 0;justify-content:center}
+.match-team-pill{background:rgba(46,204,113,.15);border:1.5px solid var(--border2);border-radius:12px;padding:10px 18px;font-weight:700;font-size:1rem}
+.match-vs-sep{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--accent)}
+.match-msg{color:var(--gray);font-size:.9rem;line-height:1.5;margin-bottom:24px}
+
+/* ═══════════════════════════ PROFILE SCREEN ═══════════════════════════ */
+#profile{padding:0}
+.profile-header{padding:28px 20px 20px;text-align:center;position:relative}
+.profile-avatar-wrap{position:relative;display:inline-block;margin-bottom:12px}
+.profile-avatar{width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g3));
+  display:flex;align-items:center;justify-content:center;font-size:2.2rem;margin:0 auto;
+  border:3px solid var(--border2);box-shadow:0 0 24px rgba(46,204,113,.3)}
+.profile-name{font-family:'Bebas Neue',sans-serif;font-size:1.8rem;letter-spacing:1px}
+.profile-city{color:var(--gray);font-size:.85rem;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:5px}
+.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin:0 20px;border-radius:12px;overflow:hidden}
+.p-stat{background:var(--card);padding:14px 10px;text-align:center}
+.p-stat-val{font-family:'Bebas Neue',sans-serif;font-size:1.6rem;color:var(--g3)}
+.p-stat-lbl{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+.profile-section{padding:20px}
+.profile-section h3{font-size:.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px}
+.info-row{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);font-size:.9rem}
+.info-row:last-child{border:none}
+.info-row .ir-icon{width:30px;height:30px;border-radius:8px;background:rgba(46,204,113,.1);display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
+.info-row .ir-label{color:var(--muted);font-size:.75rem;display:block}
+.level-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:700}
+.level-beginner{background:rgba(58,158,232,.15);border:1px solid rgba(58,158,232,.3);color:var(--blue)}
+.level-intermediate{background:rgba(247,201,72,.15);border:1px solid rgba(247,201,72,.3);color:var(--accent)}
+.level-competitive{background:rgba(46,204,113,.15);border:1px solid rgba(46,204,113,.3);color:var(--g3)}
+
+/* ═══════════════════════════ TOAST ═══════════════════════════ */
+.toast{
+  position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-80px);
+  background:var(--card);border:1.5px solid var(--border2);border-radius:12px;
+  padding:12px 20px;font-size:.85rem;font-weight:600;z-index:600;
+  transition:transform .35s cubic-bezier(.25,.46,.45,.94);max-width:320px;white-space:nowrap;
+  display:flex;align-items:center;gap:8px;box-shadow:0 4px 24px rgba(0,0,0,.4);
+}
+.toast.show{transform:translateX(-50%) translateY(0)}
+.toast.success{border-color:rgba(46,204,113,.4);color:var(--g3)}
+.toast.error{border-color:rgba(232,67,58,.4);color:var(--red)}
+
+/* ═══════════════════════════ MISC ═══════════════════════════ */
+.divider{height:1px;background:var(--border);margin:16px 0}
+.tag{display:inline-flex;align-items:center;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:20px;padding:4px 10px;font-size:.72rem;font-weight:600;color:var(--gray)}
+.scroll-body{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:20px}
+.scroll-body::-webkit-scrollbar{width:0}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+
+/* Fade-up animation for cards */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-up{animation:fadeUp .4s ease both}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════ SPLASH ═══════ -->
+  <div class="screen active" id="splash">
+    <div class="splash-ball">⚽</div>
+    <div class="splash-logo">KickMatch</div>
+    <p class="splash-tagline">Encuentra a tu <strong>rival perfecto</strong>.<br/>Reta, conecta y juega.</p>
+    <button class="btn btn-primary btn-full" id="btn-splash-start" style="margin-bottom:12px;font-size:1.05rem;padding:16px">
+      ⚽ Registrar mi equipo
+    </button>
+    <button class="btn btn-outline btn-full" id="btn-splash-demo">
+      👀 Ver demo (cargar equipos ficticios)
+    </button>
+    <p style="color:var(--muted);font-size:.75rem;margin-top:20px;line-height:1.5">
+      Tus datos se guardan localmente en este dispositivo.<br>Solo tú puedes verlos.
+    </p>
+  </div>
+
+  <!-- ═══════ REGISTRO ═══════ -->
+  <div class="screen" id="register">
+    <div class="topbar">
+      <span class="logo">KickMatch</span>
+      <span style="font-size:.8rem;color:var(--muted)">Nuevo equipo</span>
+    </div>
+    <div class="scroll-body" style="padding:16px 20px 40px">
+      <div style="margin-bottom:20px">
+        <h2 style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:1px">Regístrate ⚡</h2>
+        <p style="color:var(--gray);font-size:.83rem;margin-top:2px">Cuéntanos sobre tu equipo para encontrar rivales</p>
+      </div>
+
+      <div class="form-group">
+        <label>Nombre del equipo *</label>
+        <input class="inp" id="f-name" placeholder="Ej: Los Cóndores FC" maxlength="40"/>
+        <span class="err-msg" id="err-name"></span>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Ciudad *</label>
+          <input class="inp" id="f-city" placeholder="Ej: Medellín" maxlength="30"/>
+          <span class="err-msg" id="err-city"></span>
+        </div>
+        <div class="form-group">
+          <label>Jugadores *</label>
+          <input class="inp" id="f-players" placeholder="Ej: 12" type="number" min="5" max="30"/>
+          <span class="err-msg" id="err-players"></span>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Edad mínima</label>
+          <input class="inp" id="f-age-min" placeholder="Ej: 18" type="number" min="10" max="60"/>
+        </div>
+        <div class="form-group">
+          <label>Edad máxima</label>
+          <input class="inp" id="f-age-max" placeholder="Ej: 35" type="number" min="10" max="70"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>Nivel del equipo *</label>
+        <select class="sel" id="f-level">
+          <option value="">— Seleccionar —</option>
+          <option value="Principiante">🟢 Principiante</option>
+          <option value="Intermedio">🟡 Intermedio</option>
+          <option value="Competitivo">🔴 Competitivo</option>
+        </select>
+        <span class="err-msg" id="err-level"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Días disponibles *</label>
+        <div class="checkbox-group" id="f-days">
+          <label class="check-pill"><input type="checkbox" value="Lun"/>Lun</label>
+          <label class="check-pill"><input type="checkbox" value="Mar"/>Mar</label>
+          <label class="check-pill"><input type="checkbox" value="Mié"/>Mié</label>
+          <label class="check-pill"><input type="checkbox" value="Jue"/>Jue</label>
+          <label class="check-pill"><input type="checkbox" value="Vie"/>Vie</label>
+          <label class="check-pill"><input type="checkbox" value="Sáb"/>Sáb</label>
+          <label class="check-pill"><input type="checkbox" value="Dom"/>Dom</label>
+        </div>
+        <span class="err-msg" id="err-days"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Horario preferido</label>
+        <select class="sel" id="f-time">
+          <option value="Mañana (6–12h)">🌅 Mañana (6–12h)</option>
+          <option value="Tarde (12–18h)">☀️ Tarde (12–18h)</option>
+          <option value="Noche (18–22h)" selected>🌙 Noche (18–22h)</option>
+          <option value="Cualquier hora">⏰ Cualquier hora</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>¿Campo disponible?</label>
+        <select class="sel" id="f-field">
+          <option value="Tenemos campo">✅ Sí, tenemos campo</option>
+          <option value="Necesitamos campo">❌ Necesitamos campo</option>
+          <option value="Podemos conseguir">🤝 Podemos conseguir uno</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Teléfono / Contacto *</label>
+        <input class="inp" id="f-contact" placeholder="Ej: +57 300 123 4567" maxlength="30"/>
+        <span class="err-msg" id="err-contact"></span>
+      </div>
+
+      <div class="form-group">
+        <label>Descripción opcional</label>
+        <textarea class="textarea" id="f-desc" placeholder="Cuéntanos algo sobre tu equipo, estilo de juego, etc."></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-full" id="btn-register" style="margin-top:8px;padding:16px;font-size:1.05rem">
+        ⚽ ¡Encontrar rivales!
+      </button>
+      <button class="btn btn-danger btn-full btn-sm" id="btn-back-splash" style="margin-top:10px">
+        ← Volver
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══════ SWIPE ═══════ -->
+  <div class="screen" id="swipe">
+    <div class="topbar">
+      <span class="logo">KickMatch</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="team-name" id="sw-myname"></span>
+        <button class="btn btn-outline btn-sm" id="btn-open-filters" style="padding:6px 12px;font-size:.75rem">
+          ⚙️ Filtros
+        </button>
+      </div>
+    </div>
+
+    <!-- Filter chips scroll -->
+    <div class="filter-bar" id="active-filters-bar"></div>
+
+    <!-- Swipe counter -->
+    <div class="swipe-counter" id="sw-counter"></div>
+
+    <!-- Cards area -->
+    <div class="swipe-area" id="swipe-area">
+      <div class="empty-state" id="sw-empty" style="display:none">
+        <div class="empty-icon">🤷</div>
+        <h3>No quedan rivales</h3>
+        <p>Has visto todos los equipos disponibles.<br>Vuelve más tarde o ajusta tus filtros.</p>
+        <button class="btn btn-outline btn-sm" style="margin-top:16px" onclick="resetSwipe()">🔄 Reiniciar</button>
+      </div>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="swipe-actions">
+      <button class="action-btn action-no" id="btn-no" title="No me interesa">❌</button>
+      <button class="action-btn action-super" id="btn-super" title="Super interés">⭐</button>
+      <button class="action-btn action-yes" id="btn-yes" title="Me interesa">✅</button>
+    </div>
+
+    <!-- Bottom nav -->
+    <nav class="bottomnav" id="nav-swipe">
+      <button class="nav-btn" id="nav-swipe-btn" onclick="navTo('swipe')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <span>Explorar</span>
+      </button>
+      <button class="nav-btn" id="nav-matches-btn" onclick="navTo('matches')">
+        <div class="nav-icon-wrap">
+          <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span class="badge" id="match-badge" style="display:none">0</span>
+        </div>
+        <span>Matches</span>
+      </button>
+      <button class="nav-btn" id="nav-profile-btn" onclick="navTo('profile')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <span>Mi Equipo</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ═══════ MATCHES ═══════ -->
+  <div class="screen" id="matches">
+    <div class="topbar">
+      <span class="logo">KickMatch</span>
+      <span class="team-name">Tus Matches</span>
+    </div>
+    <nav class="bottomnav">
+      <button class="nav-btn" onclick="navTo('swipe')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <span>Explorar</span>
+      </button>
+      <button class="nav-btn active" onclick="navTo('matches')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <span>Matches</span>
+      </button>
+      <button class="nav-btn" onclick="navTo('profile')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <span>Mi Equipo</span>
+      </button>
+    </nav>
+    <div class="scroll-body" style="order:-1">
+      <div style="padding:20px 20px 8px">
+        <h2 style="font-family:'Bebas Neue',sans-serif;font-size:1.6rem;letter-spacing:1px">Tus Matches 🔥</h2>
+        <p style="color:var(--gray);font-size:.83rem;margin-top:2px" id="match-count-text"></p>
+      </div>
+      <div class="match-list" id="match-list"></div>
+    </div>
+  </div>
+
+  <!-- ═══════ PROFILE ═══════ -->
+  <div class="screen" id="profile">
+    <div class="topbar">
+      <span class="logo">KickMatch</span>
+      <button class="btn btn-danger btn-sm" id="btn-logout">🔄 Cambiar equipo</button>
+    </div>
+    <nav class="bottomnav">
+      <button class="nav-btn" onclick="navTo('swipe')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></div>
+        <span>Explorar</span>
+      </button>
+      <button class="nav-btn" onclick="navTo('matches')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <span>Matches</span>
+      </button>
+      <button class="nav-btn active" onclick="navTo('profile')">
+        <div class="nav-icon-wrap"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></div>
+        <span>Mi Equipo</span>
+      </button>
+    </nav>
+    <div class="scroll-body" style="order:-1" id="profile-body"></div>
+  </div>
+
+</div><!-- /app -->
+
+<!-- ═══════ FILTER PANEL ═══════ -->
+<div class="filter-overlay" id="filter-overlay" onclick="closeFilters()"></div>
+<div class="filter-panel" id="filter-panel">
+  <div class="panel-handle"></div>
+  <h3 style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;letter-spacing:1px;margin-bottom:16px">Filtrar Rivales 🔍</h3>
+  <div class="form-group">
+    <label>Ciudad</label>
+    <input class="inp" id="fi-city" placeholder="Cualquier ciudad"/>
+  </div>
+  <div class="form-group">
+    <label>Nivel</label>
+    <select class="sel" id="fi-level">
+      <option value="">Cualquier nivel</option>
+      <option value="Principiante">🟢 Principiante</option>
+      <option value="Intermedio">🟡 Intermedio</option>
+      <option value="Competitivo">🔴 Competitivo</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Día disponible</label>
+    <select class="sel" id="fi-day">
+      <option value="">Cualquier día</option>
+      <option value="Lun">Lunes</option>
+      <option value="Mar">Martes</option>
+      <option value="Mié">Miércoles</option>
+      <option value="Jue">Jueves</option>
+      <option value="Vie">Viernes</option>
+      <option value="Sáb">Sábado</option>
+      <option value="Dom">Domingo</option>
+    </select>
+  </div>
+  <div class="form-group">
+    <label>Jugadores mínimos</label>
+    <input class="inp" id="fi-players" type="number" placeholder="Ej: 10" min="1" max="30"/>
+  </div>
+  <div style="display:flex;gap:10px;margin-top:4px">
+    <button class="btn btn-primary" style="flex:1" onclick="applyFilters()">✅ Aplicar</button>
+    <button class="btn btn-outline" style="flex:1" onclick="clearFilters()">🗑 Limpiar</button>
+  </div>
+</div>
+
+<!-- ═══════ CONTACT SHEET ═══════ -->
+<div class="filter-overlay" id="contact-overlay" onclick="closeContact()"></div>
+<div class="contact-sheet" id="contact-sheet">
+  <div class="panel-handle"></div>
+  <div id="contact-content"></div>
+</div>
+
+<!-- ═══════ MATCH MODAL ═══════ -->
+<div id="match-modal">
+  <div class="match-confetti" id="confetti-container"></div>
+  <div class="match-flame">🔥</div>
+  <div class="match-title">¡MATCH!</div>
+  <p style="color:var(--gray);margin:6px 0 16px">¡Encontraste un rival perfecto!</p>
+  <div class="match-vs" id="modal-vs"></div>
+  <p class="match-msg" id="modal-msg"></p>
+  <button class="btn btn-primary" style="width:100%;margin-bottom:10px" onclick="closeMatchModal()">🤝 ¡Genial!</button>
+  <button class="btn btn-outline" style="width:100%" onclick="navTo('matches');closeMatchModal()">Ver mis matches →</button>
+</div>
+
+<!-- ═══════ TOAST ═══════ -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STORAGE KEYS
+// ══════════════════════════════════════════════
+const KEYS = {
+  myTeam:    'km_myteam',
+  teams:     'km_teams',
+  liked:     'km_liked',
+  passed:    'km_passed',
+  matches:   'km_matches',
+  seen:      'km_seen',
+};
+
+// ══════════════════════════════════════════════
+//  DEMO DATA – Equipos ficticios
+// ══════════════════════════════════════════════
+const DEMO_TEAMS = [
+  {id:'d1',name:'Aguilas Doradas FC',city:'Medellín',players:14,ageMin:20,ageMax:32,level:'Competitivo',days:['Sáb','Dom'],time:'Tarde (12–18h)',field:'Tenemos campo',contact:'+57 300 111 2222',desc:'Equipo agresivo, buen toque de balón. Buscamos rivales serios.',matchedMe:false},
+  {id:'d2',name:'Los Tiburones',city:'Cali',players:11,ageMin:18,ageMax:28,level:'Intermedio',days:['Vie','Sáb'],time:'Noche (18–22h)',field:'Necesitamos campo',contact:'@lostiburones_cali',desc:'Rápidos y con garra. Vamos con todo.',matchedMe:true},
+  {id:'d3',name:'Rayo Verde CF',city:'Bogotá',players:13,ageMin:22,ageMax:35,level:'Intermedio',days:['Sáb'],time:'Mañana (6–12h)',field:'Podemos conseguir',contact:'+57 315 444 5555',desc:'Somos un equipo de amigos del barrio. Puro amor al fútbol.',matchedMe:false},
+  {id:'d4',name:'Deportivo Norte',city:'Barranquilla',players:16,ageMin:19,ageMax:30,level:'Competitivo',days:['Mar','Jue','Sáb'],time:'Noche (18–22h)',field:'Tenemos campo',contact:'+57 321 777 8888',desc:'Liga regional. Venimos a ganar.',matchedMe:true},
+  {id:'d5',name:'FC Pampita',city:'Medellín',players:10,ageMin:25,ageMax:40,level:'Principiante',days:['Dom'],time:'Mañana (6–12h)',field:'Necesitamos campo',contact:'@fcpampita',desc:'Solo queremos pasar el rato y sudar la camiseta.',matchedMe:false},
+  {id:'d6',name:'Halcones Reales',city:'Pereira',players:12,ageMin:18,ageMax:26,level:'Competitivo',days:['Lun','Mié','Vie'],time:'Noche (18–22h)',field:'Tenemos campo',contact:'+57 317 999 0000',desc:'',matchedMe:false},
+  {id:'d7',name:'Estrellas del Sur',city:'Pasto',players:11,ageMin:20,ageMax:35,level:'Intermedio',days:['Sáb','Dom'],time:'Tarde (12–18h)',field:'Podemos conseguir',contact:'+57 310 555 1234',desc:'Equipo familiar. Buen ambiente garantizado.',matchedMe:true},
+  {id:'d8',name:'Los Invisibles',city:'Bucaramanga',players:13,ageMin:22,ageMax:30,level:'Intermedio',days:['Vie','Sáb'],time:'Tarde (12–18h)',field:'Tenemos campo',contact:'+57 314 321 9876',desc:'Toque, toque y gol. Así jugamos.',matchedMe:false},
+  {id:'d9',name:'United Caribe FC',city:'Cartagena',players:15,ageMin:18,ageMax:28,level:'Competitivo',days:['Mar','Sáb'],time:'Noche (18–22h)',field:'Necesitamos campo',contact:'+57 302 147 8523',desc:'Campeones del torneo barrial 2023.',matchedMe:false},
+  {id:'d10',name:'Chamos Bravos',city:'Cali',players:9,ageMin:16,ageMax:22,level:'Principiante',days:['Dom'],time:'Mañana (6–12h)',field:'Necesitamos campo',contact:'@chamosbravos',desc:'Jóvenes con hambre de aprender.',matchedMe:false},
+  {id:'d11',name:'Trueno Andino',city:'Manizales',players:14,ageMin:24,ageMax:38,level:'Intermedio',days:['Sáb','Dom'],time:'Mañana (6–12h)',field:'Tenemos campo',contact:'+57 313 000 1111',desc:'',matchedMe:true},
+  {id:'d12',name:'Los Veloces FC',city:'Bogotá',players:12,ageMin:18,ageMax:25,level:'Competitivo',days:['Mié','Vie','Sáb'],time:'Noche (18–22h)',field:'Podemos conseguir',contact:'+57 316 234 5678',desc:'Contraataque letal. Venimos a sorprender.',matchedMe:false},
+];
+
+// ══════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════
+let myTeam = null;
+let allTeams = [];
+let liked = [];
+let passed = [];
+let matches = [];
+let filters = {city:'',level:'',day:'',minPlayers:''};
+let swipeQueue = [];
+let currentCardEl = null;
+let isDragging = false, startX = 0, startY = 0, currentX = 0;
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+function init() {
+  loadState();
+  setupCheckPills();
+  setupEventListeners();
+  if (myTeam) {
+    buildSwipeQueue();
+    navTo('swipe');
+  }
+}
+
+function loadState() {
+  myTeam  = JSON.parse(localStorage.getItem(KEYS.myTeam)  || 'null');
+  allTeams= JSON.parse(localStorage.getItem(KEYS.teams)   || '[]');
+  liked   = JSON.parse(localStorage.getItem(KEYS.liked)   || '[]');
+  passed  = JSON.parse(localStorage.getItem(KEYS.passed)  || '[]');
+  matches = JSON.parse(localStorage.getItem(KEYS.matches) || '[]');
+}
+
+function saveState() {
+  localStorage.setItem(KEYS.myTeam,  JSON.stringify(myTeam));
+  localStorage.setItem(KEYS.teams,   JSON.stringify(allTeams));
+  localStorage.setItem(KEYS.liked,   JSON.stringify(liked));
+  localStorage.setItem(KEYS.passed,  JSON.stringify(passed));
+  localStorage.setItem(KEYS.matches, JSON.stringify(matches));
+}
+
+// ══════════════════════════════════════════════
+//  EVENT LISTENERS
+// ══════════════════════════════════════════════
+function setupEventListeners() {
+  // Splash
+  document.getElementById('btn-splash-start').addEventListener('click', () => showScreen('register'));
+  document.getElementById('btn-splash-demo').addEventListener('click', loadDemo);
+  document.getElementById('btn-back-splash').addEventListener('click', () => showScreen('splash'));
+
+  // Register
+  document.getElementById('btn-register').addEventListener('click', registerTeam);
+
+  // Swipe buttons
+  document.getElementById('btn-no').addEventListener('click', () => swipe('no'));
+  document.getElementById('btn-yes').addEventListener('click', () => swipe('yes'));
+  document.getElementById('btn-super').addEventListener('click', () => swipe('super'));
+
+  // Filters
+  document.getElementById('btn-open-filters').addEventListener('click', openFilters);
+
+  // Profile logout
+  document.getElementById('btn-logout').addEventListener('click', logout);
+}
+
+// ══════════════════════════════════════════════
+//  SCREEN NAVIGATION
+// ══════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  if (id === 'swipe')   renderSwipeScreen();
+  if (id === 'matches') renderMatchesScreen();
+  if (id === 'profile') renderProfileScreen();
+}
+
+function navTo(id) {
+  showScreen(id);
+  // Update all nav buttons
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const map = {swipe:'nav-swipe-btn',matches:'nav-matches-btn',profile:'nav-profile-btn'};
+  if (map[id]) document.getElementById(map[id]).classList.add('active');
+}
+
+// ══════════════════════════════════════════════
+//  CHECK PILLS SETUP
+// ══════════════════════════════════════════════
+function setupCheckPills() {
+  document.querySelectorAll('.check-pill').forEach(pill => {
+    pill.addEventListener('click', function() {
+      const cb = this.querySelector('input[type=checkbox]');
+      cb.checked = !cb.checked;
+      this.classList.toggle('checked', cb.checked);
+    });
+  });
+}
+
+function getCheckedDays() {
+  return [...document.querySelectorAll('#f-days input[type=checkbox]')]
+    .filter(cb => cb.checked).map(cb => cb.value);
+}
+
+// ══════════════════════════════════════════════
+//  REGISTER
+// ══════════════════════════════════════════════
+function registerTeam() {
+  const name    = document.getElementById('f-name').value.trim();
+  const city    = document.getElementById('f-city').value.trim();
+  const players = parseInt(document.getElementById('f-players').value);
+  const ageMin  = parseInt(document.getElementById('f-age-min').value) || 18;
+  const ageMax  = parseInt(document.getElementById('f-age-max').value) || 40;
+  const level   = document.getElementById('f-level').value;
+  const time    = document.getElementById('f-time').value;
+  const field   = document.getElementById('f-field').value;
+  const contact = document.getElementById('f-contact').value.trim();
+  const desc    = document.getElementById('f-desc').value.trim();
+  const days    = getCheckedDays();
+
+  // Clear errors
+  ['name','city','players','level','days','contact'].forEach(f => {
+    document.getElementById('err-'+f).textContent = '';
+    const el = document.getElementById('f-'+f);
+    if (el) el.classList.remove('inp-error');
+  });
+
+  let valid = true;
+  if (!name)          { setError('name','El nombre es obligatorio'); valid=false; }
+  if (!city)          { setError('city','La ciudad es obligatoria'); valid=false; }
+  if (!players||players<5) { setError('players','Mínimo 5 jugadores'); valid=false; }
+  if (!level)         { setError('level','Selecciona el nivel'); valid=false; }
+  if (!days.length)   { setError('days','Selecciona al menos un día'); valid=false; }
+  if (!contact)       { setError('contact','El contacto es obligatorio'); valid=false; }
+  if (!valid) return;
+
+  myTeam = {
+    id: 'my_'+Date.now(),
+    name, city, players, ageMin, ageMax, level, days, time, field, contact, desc,
+    createdAt: new Date().toISOString()
+  };
+
+  saveState();
+  buildSwipeQueue();
+  navTo('swipe');
+  showToast('✅ ¡Equipo registrado! Empieza a explorar', 'success');
+}
+
+function setError(field, msg) {
+  document.getElementById('err-'+field).textContent = msg;
+  const el = document.getElementById('f-'+field);
+  if (el) el.classList.add('inp-error');
+}
+
+// ══════════════════════════════════════════════
+//  DEMO LOADER
+// ══════════════════════════════════════════════
+function loadDemo() {
+  allTeams = [...DEMO_TEAMS];
+  myTeam = {
+    id: 'demo_my',
+    name:'Mi Equipo Demo',city:'Bogotá',players:12,
+    ageMin:20,ageMax:32,level:'Intermedio',
+    days:['Sáb','Dom'],time:'Tarde (12–18h)',
+    field:'Podemos conseguir',contact:'@miequipodemo',
+    desc:'Equipo de demostración.',createdAt:new Date().toISOString()
+  };
+  // Pre-load some matches from teams that "matchedMe"
+  matches = DEMO_TEAMS.filter(t => t.matchedMe && liked.includes(t.id)).map(t=>t.id);
+  // Simulate that some demo teams already liked us back
+  saveState();
+  buildSwipeQueue();
+  navTo('swipe');
+  showToast('👀 Modo demo activado. ¡Empieza a swipear!', 'success');
+}
+
+// ══════════════════════════════════════════════
+//  SWIPE QUEUE
+// ══════════════════════════════════════════════
+function buildSwipeQueue() {
+  const seen = new Set([...liked, ...passed]);
+  let pool = allTeams.length ? allTeams : DEMO_TEAMS;
+  swipeQueue = pool.filter(t => {
+    if (t.id === (myTeam?.id)) return false;
+    if (seen.has(t.id)) return false;
+    if (filters.city && !t.city.toLowerCase().includes(filters.city.toLowerCase())) return false;
+    if (filters.level && t.level !== filters.level) return false;
+    if (filters.day && !t.days.includes(filters.day)) return false;
+    if (filters.minPlayers && t.players < parseInt(filters.minPlayers)) return false;
+    return true;
+  });
+  renderSwipeScreen();
+}
+
+function resetSwipe() {
+  liked = []; passed = []; matches = [];
+  saveState();
+  buildSwipeQueue();
+  showToast('🔄 Reiniciado. ¡A explorar de nuevo!', 'success');
+}
+
+// ══════════════════════════════════════════════
+//  SWIPE SCREEN RENDER
+// ══════════════════════════════════════════════
+function renderSwipeScreen() {
+  if (!myTeam) return;
+  document.getElementById('sw-myname').textContent = myTeam.name;
+  updateMatchBadge();
+  renderActiveFilterChips();
+
+  const area = document.getElementById('swipe-area');
+  const empty = document.getElementById('sw-empty');
+
+  // Clear old cards
+  area.querySelectorAll('.team-card').forEach(c => c.remove());
+
+  if (!swipeQueue.length) {
+    empty.style.display = 'flex';
+    document.getElementById('sw-counter').textContent = '';
+    document.getElementById('btn-no').disabled = true;
+    document.getElementById('btn-yes').disabled = true;
+    document.getElementById('btn-super').disabled = true;
+    return;
+  }
+
+  empty.style.display = 'none';
+  document.getElementById('btn-no').disabled = false;
+  document.getElementById('btn-yes').disabled = false;
+  document.getElementById('btn-super').disabled = false;
+  document.getElementById('sw-counter').textContent = `${swipeQueue.length} equipo${swipeQueue.length!==1?'s':''} por explorar`;
+
+  // Render top 3 cards (stacked)
+  const visible = swipeQueue.slice(0, Math.min(3, swipeQueue.length));
+  visible.reverse().forEach((team, i) => {
+    const card = buildTeamCard(team);
+    const ri = visible.length - 1 - i;
+    card.style.transform = `scale(${1 - ri*0.03}) translateY(${ri*10}px)`;
+    card.style.zIndex = visible.length - ri;
+    card.style.opacity = ri === 0 ? 1 : ri === 1 ? 0.85 : 0.7;
+    area.appendChild(card);
+  });
+
+  // Set up drag on top card
+  currentCardEl = area.querySelector('.team-card:last-child');
+  if (currentCardEl) setupDrag(currentCardEl);
+}
+
+// ══════════════════════════════════════════════
+//  BUILD TEAM CARD
+// ══════════════════════════════════════════════
+function buildTeamCard(team) {
+  const card = document.createElement('div');
+  card.className = 'team-card fade-up';
+  card.dataset.id = team.id;
+
+  const levelClass = {
+    'Principiante':'level-beginner',
+    'Intermedio':'level-intermediate',
+    'Competitivo':'level-competitive'
+  }[team.level] || 'level-intermediate';
+
+  const levelEmoji = {'Principiante':'🟢','Intermedio':'🟡','Competitivo':'🔴'}[team.level];
+  const fieldEmoji = team.field.includes('Tenemos') ? '✅' : team.field.includes('Necesitamos') ? '❌' : '🤝';
+  const days = team.days.join(' · ');
+  const ageRange = `${team.ageMin}–${team.ageMax} años`;
+
+  card.innerHTML = `
+    <div class="swipe-label yes">ME INTERESA ✅</div>
+    <div class="swipe-label no">PASO ❌</div>
+    <div class="card-header">
+      <div class="card-badge">
+        ${levelEmoji} ${team.level}
+      </div>
+      <div class="card-team-name">${team.name}</div>
+      <div class="card-city">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${team.city}
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="card-stats">
+        <div class="stat-box">
+          <div class="stat-label">Jugadores</div>
+          <div class="stat-value">👥 ${team.players}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Edades</div>
+          <div class="stat-value">🎂 ${ageRange}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Horario</div>
+          <div class="stat-value" style="font-size:.8rem">${team.time.split(' ')[0]}</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Nivel</div>
+          <div class="stat-value"><span class="level-badge ${levelClass}" style="font-size:.7rem;padding:2px 8px">${team.level}</span></div>
+        </div>
+      </div>
+      <div class="card-avail">
+        <div class="avail-label">Disponibilidad</div>
+        <div class="avail-pills">
+          ${team.days.map(d=>`<span class="avail-pill">${d}</span>`).join('')}
+        </div>
+      </div>
+      ${team.desc ? `<p style="font-size:.8rem;color:var(--gray);line-height:1.5;margin-bottom:8px;font-style:italic">"${team.desc}"</p>` : ''}
+      <div class="card-field">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg>
+        ${fieldEmoji} ${team.field}
+      </div>
+    </div>`;
+  return card;
+}
+
+// ══════════════════════════════════════════════
+//  DRAG / SWIPE LOGIC
+// ══════════════════════════════════════════════
+function setupDrag(card) {
+  const onStart = (e) => {
+    if (e.target.closest('.action-btn')) return;
+    isDragging = true;
+    startX = (e.touches ? e.touches[0].clientX : e.clientX);
+    startY = (e.touches ? e.touches[0].clientY : e.clientY);
+    card.classList.add('is-swiping');
+    card.style.transition = 'none';
+  };
+  const onMove = (e) => {
+    if (!isDragging) return;
+    currentX = (e.touches ? e.touches[0].clientX : e.clientX) - startX;
+    const currentY = (e.touches ? e.touches[0].clientY : e.clientY) - startY;
+    const rotate = currentX * 0.08;
+    card.style.transform = `translateX(${currentX}px) translateY(${currentY*0.3}px) rotate(${rotate}deg)`;
+
+    // Show labels
+    const yesLabel = card.querySelector('.swipe-label.yes');
+    const noLabel  = card.querySelector('.swipe-label.no');
+    const threshold = 40;
+    if (currentX > threshold)  { yesLabel.style.opacity = Math.min(1, (currentX-threshold)/80); noLabel.style.opacity = 0; }
+    else if (currentX < -threshold) { noLabel.style.opacity = Math.min(1, (-currentX-threshold)/80); yesLabel.style.opacity = 0; }
+    else { yesLabel.style.opacity = 0; noLabel.style.opacity = 0; }
+  };
+  const onEnd = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    card.classList.remove('is-swiping');
+    card.style.transition = '';
+    const SWIPE_THRESHOLD = 100;
+    if (currentX > SWIPE_THRESHOLD)       animateSwipe(card, 'yes');
+    else if (currentX < -SWIPE_THRESHOLD) animateSwipe(card, 'no');
+    else { card.style.transform = ''; }
+    currentX = 0;
+  };
+
+  card.addEventListener('mousedown', onStart);
+  card.addEventListener('touchstart', onStart, {passive:true});
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, {passive:true});
+  document.addEventListener('mouseup', onEnd);
+  document.addEventListener('touchend', onEnd);
+}
+
+function swipe(dir) {
+  if (!currentCardEl) return;
+  animateSwipe(currentCardEl, dir);
+}
+
+function animateSwipe(card, dir) {
+  const tx = dir === 'yes' || dir === 'super' ? 600 : -600;
+  card.style.transition = 'transform .35s ease, opacity .35s ease';
+  card.style.transform = `translateX(${tx}px) rotate(${dir==='yes'?20:-20}deg)`;
+  card.style.opacity = '0';
+
+  const teamId = card.dataset.id;
+  const team = swipeQueue.find(t => t.id === teamId);
+
+  setTimeout(() => {
+    card.remove();
+    if (team) processSwipe(team, dir);
+    swipeQueue = swipeQueue.filter(t => t.id !== teamId);
+    renderSwipeScreen();
+  }, 350);
+}
+
+// ══════════════════════════════════════════════
+//  PROCESS SWIPE DECISION
+// ══════════════════════════════════════════════
+function processSwipe(team, dir) {
+  if (dir === 'yes' || dir === 'super') {
+    liked.push(team.id);
+
+    // Check for match (team already liked us = matchedMe)
+    const isMatch = team.matchedMe || Math.random() < 0.35; // 35% chance for demo realism
+    if (isMatch && !matches.includes(team.id)) {
+      matches.push(team.id);
+      saveState();
+      showMatchModal(team, dir === 'super');
+      return;
+    }
+    showToast(`✅ Le diste me interesa a ${team.name}!`, 'success');
+  } else {
+    passed.push(team.id);
+    showToast(`↩️ Pasaste de ${team.name}`, '');
+  }
+  saveState();
+}
+
+// ══════════════════════════════════════════════
+//  MATCH MODAL
+// ══════════════════════════════════════════════
+function showMatchModal(team, isSuper=false) {
+  const modal = document.getElementById('match-modal');
+  document.getElementById('modal-vs').innerHTML = `
+    <div class="match-team-pill">⚽ ${myTeam.name}</div>
+    <div class="match-vs-sep">VS</div>
+    <div class="match-team-pill">⚽ ${team.name}</div>`;
+  document.getElementById('modal-msg').textContent =
+    isSuper ? `¡Super match! ${team.name} también quiere jugar contra ti. ¡Ve al chat y coordina el partido!`
+             : `${team.name} de ${team.city} también está interesado en jugar. ¡Contáctalos!`;
+
+  // Confetti
+  createConfetti();
+  modal.classList.add('show');
+  updateMatchBadge();
+}
+
+function closeMatchModal() {
+  document.getElementById('match-modal').classList.remove('show');
+  document.getElementById('confetti-container').innerHTML = '';
+}
+
+function createConfetti() {
+  const container = document.getElementById('confetti-container');
+  container.innerHTML = '';
+  const colors = ['#2ecc71','#f7c948','#3a9ee8','#e8433a','#ffffff','#54d98c'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.cssText = `
+      left:${Math.random()*100}%;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*0.5}s;
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      border-radius:${Math.random()>0.5?'50%':'2px'};
+    `;
+    container.appendChild(piece);
+  }
+}
+
+// ══════════════════════════════════════════════
+//  MATCHES SCREEN
+// ══════════════════════════════════════════════
+function renderMatchesScreen() {
+  updateMatchBadge();
+  const list = document.getElementById('match-list');
+  const pool = allTeams.length ? allTeams : DEMO_TEAMS;
+  const matchedTeams = pool.filter(t => matches.includes(t.id));
+
+  document.getElementById('match-count-text').textContent =
+    matchedTeams.length ? `${matchedTeams.length} rival${matchedTeams.length!==1?'es':''} esperan jugar contigo` : 'Aún no tienes matches. ¡Sigue explorando!';
+
+  if (!matchedTeams.length) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🏆</div>
+        <h3>Sin matches todavía</h3>
+        <p>Cuando des "Me interesa" a un equipo y ellos también, aparecerán aquí.</p>
+        <button class="btn btn-primary btn-sm" style="margin-top:16px" onclick="navTo('swipe')">⚽ Explorar equipos</button>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = matchedTeams.map((t, i) => `
+    <div class="match-card fade-up" style="animation-delay:${i*0.07}s">
+      <div class="match-avatar">${t.name[0]}</div>
+      <div class="match-info">
+        <div class="match-name">${t.name}</div>
+        <div class="match-meta">📍 ${t.city} · 👥 ${t.players} jug. · ${t.level}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="showContact('${t.id}')">Contactar</button>
+    </div>`).join('');
+}
+
+function showContact(teamId) {
+  const pool = allTeams.length ? allTeams : DEMO_TEAMS;
+  const team = pool.find(t => t.id === teamId);
+  if (!team) return;
+
+  const levelEmoji = {'Principiante':'🟢','Intermedio':'🟡','Competitivo':'🔴'}[team.level] || '⚽';
+  document.getElementById('contact-content').innerHTML = `
+    <div style="text-align:center;margin-bottom:20px">
+      <div class="match-avatar" style="width:64px;height:64px;font-size:1.8rem;margin:0 auto 10px">${team.name[0]}</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:1.5rem;letter-spacing:1px">${team.name}</div>
+      <div style="color:var(--gray);font-size:.82rem">📍 ${team.city} · ${levelEmoji} ${team.level}</div>
+    </div>
+    <div class="divider"></div>
+    <div class="info-row">
+      <div class="ir-icon">👥</div>
+      <div><span class="ir-label">Jugadores</span>${team.players} disponibles</div>
+    </div>
+    <div class="info-row">
+      <div class="ir-icon">🎂</div>
+      <div><span class="ir-label">Edades</span>${team.ageMin}–${team.ageMax} años</div>
+    </div>
+    <div class="info-row">
+      <div class="ir-icon">📅</div>
+      <div><span class="ir-label">Disponibilidad</span>${team.days.join(', ')}</div>
+    </div>
+    <div class="info-row">
+      <div class="ir-icon">⏰</div>
+      <div><span class="ir-label">Horario</span>${team.time}</div>
+    </div>
+    <div class="info-row">
+      <div class="ir-icon">🏟️</div>
+      <div><span class="ir-label">Campo</span>${team.field}</div>
+    </div>
+    ${team.desc ? `<div class="info-row"><div class="ir-icon">💬</div><div><span class="ir-label">Descripción</span>${team.desc}</div></div>` : ''}
+    <div class="divider"></div>
+    <div style="background:rgba(46,204,113,.1);border:1.5px solid var(--border2);border-radius:12px;padding:14px;margin-bottom:16px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.4rem">📞</span>
+      <div>
+        <div style="font-size:.7rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.5px">Contacto</div>
+        <div style="font-weight:700;font-size:.95rem">${team.contact}</div>
+      </div>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="closeContact()">✅ ¡Listo!</button>`;
+
+  document.getElementById('contact-overlay').classList.add('show');
+  document.getElementById('contact-sheet').classList.add('open');
+}
+
+function closeContact() {
+  document.getElementById('contact-overlay').classList.remove('show');
+  document.getElementById('contact-sheet').classList.remove('open');
+}
+
+// ══════════════════════════════════════════════
+//  PROFILE SCREEN
+// ══════════════════════════════════════════════
+function renderProfileScreen() {
+  if (!myTeam) return;
+  const pool = allTeams.length ? allTeams : DEMO_TEAMS;
+  const matchCount = matches.length;
+  const likedCount = liked.length;
+  const levelClass = {
+    'Principiante':'level-beginner',
+    'Intermedio':'level-intermediate',
+    'Competitivo':'level-competitive'
+  }[myTeam.level] || 'level-intermediate';
+
+  document.getElementById('profile-body').innerHTML = `
+    <div class="profile-header">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar">${myTeam.name[0]}</div>
+      </div>
+      <div class="profile-name">${myTeam.name}</div>
+      <div class="profile-city">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        ${myTeam.city}
+      </div>
+    </div>
+
+    <div class="profile-stats">
+      <div class="p-stat">
+        <div class="p-stat-val">${matchCount}</div>
+        <div class="p-stat-lbl">Matches</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-val">${likedCount}</div>
+        <div class="p-stat-lbl">Me interesa</div>
+      </div>
+      <div class="p-stat">
+        <div class="p-stat-val">${myTeam.players}</div>
+        <div class="p-stat-lbl">Jugadores</div>
+      </div>
+    </div>
+
+    <div class="profile-section">
+      <h3>Información del equipo</h3>
+      <div class="info-row">
+        <div class="ir-icon">⚽</div>
+        <div><span class="ir-label">Nivel</span><span class="level-badge ${levelClass}">${myTeam.level}</span></div>
+      </div>
+      <div class="info-row">
+        <div class="ir-icon">🎂</div>
+        <div><span class="ir-label">Rango de edad</span>${myTeam.ageMin}–${myTeam.ageMax} años</div>
+      </div>
+      <div class="info-row">
+        <div class="ir-icon">📅</div>
+        <div><span class="ir-label">Disponibilidad</span>${myTeam.days.join(', ')}</div>
+      </div>
+      <div class="info-row">
+        <div class="ir-icon">⏰</div>
+        <div><span class="ir-label">Horario</span>${myTeam.time}</div>
+      </div>
+      <div class="info-row">
+        <div class="ir-icon">🏟️</div>
+        <div><span class="ir-label">Campo</span>${myTeam.field}</div>
+      </div>
+      <div class="info-row">
+        <div class="ir-icon">📞</div>
+        <div><span class="ir-label">Contacto</span>${myTeam.contact}</div>
+      </div>
+      ${myTeam.desc ? `<div class="info-row"><div class="ir-icon">💬</div><div><span class="ir-label">Descripción</span>${myTeam.desc}</div></div>` : ''}
+    </div>
+
+    <div style="padding:0 20px 32px;display:flex;flex-direction:column;gap:10px">
+      <button class="btn btn-outline btn-full" onclick="navTo('swipe')">⚽ Seguir explorando</button>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+//  FILTERS
+// ══════════════════════════════════════════════
+function openFilters() {
+  document.getElementById('filter-overlay').classList.add('show');
+  document.getElementById('filter-panel').classList.add('open');
+  document.getElementById('fi-city').value = filters.city;
+  document.getElementById('fi-level').value = filters.level;
+  document.getElementById('fi-day').value = filters.day;
+  document.getElementById('fi-players').value = filters.minPlayers;
+}
+
+function closeFilters() {
+  document.getElementById('filter-overlay').classList.remove('show');
+  document.getElementById('filter-panel').classList.remove('open');
+}
+
+function applyFilters() {
+  filters.city       = document.getElementById('fi-city').value.trim();
+  filters.level      = document.getElementById('fi-level').value;
+  filters.day        = document.getElementById('fi-day').value;
+  filters.minPlayers = document.getElementById('fi-players').value;
+  closeFilters();
+  buildSwipeQueue();
+  showToast('🔍 Filtros aplicados', 'success');
+}
+
+function clearFilters() {
+  filters = {city:'',level:'',day:'',minPlayers:''};
+  closeFilters();
+  buildSwipeQueue();
+  showToast('🗑 Filtros eliminados', '');
+}
+
+function renderActiveFilterChips() {
+  const bar = document.getElementById('active-filters-bar');
+  const active = [];
+  if (filters.city)       active.push({label:'📍 '+filters.city, key:'city'});
+  if (filters.level)      active.push({label:'⚽ '+filters.level, key:'level'});
+  if (filters.day)        active.push({label:'📅 '+filters.day, key:'day'});
+  if (filters.minPlayers) active.push({label:'👥 +'+filters.minPlayers, key:'minPlayers'});
+
+  bar.innerHTML = active.map(f => `
+    <div class="filter-chip on" onclick="removeFilter('${f.key}')">
+      ${f.label} ✕
+    </div>`).join('') + `
+    <div class="filter-chip" onclick="openFilters()">
+      <svg viewBox="0 0 24 24" style="width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtros
+    </div>`;
+}
+
+function removeFilter(key) {
+  filters[key] = '';
+  buildSwipeQueue();
+}
+
+// ══════════════════════════════════════════════
+//  MATCH BADGE
+// ══════════════════════════════════════════════
+function updateMatchBadge() {
+  const badge = document.getElementById('match-badge');
+  if (matches.length > 0) {
+    badge.style.display = 'block';
+    badge.textContent = matches.length > 9 ? '9+' : matches.length;
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// ══════════════════════════════════════════════
+//  TOAST
+// ══════════════════════════════════════════════
+let toastTimer = null;
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (type ? ' '+type : '');
+  t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════════
+//  LOGOUT / RESET
+// ══════════════════════════════════════════════
+function logout() {
+  if (!confirm('¿Estás seguro? Se borrarán todos tus datos.')) return;
+  Object.values(KEYS).forEach(k => localStorage.removeItem(k));
+  myTeam = null; allTeams = []; liked = []; passed = []; matches = []; swipeQueue = [];
+  showScreen('splash');
+}
+
+// ══════════════════════════════════════════════
+//  START
+// ══════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
